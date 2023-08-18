@@ -9,12 +9,14 @@ let
 in
   mkShell rec {
     buildInputs = [
+      # Python
       pythonEnv
+      black
+
+      # sdr-rlt
       gnuradio
       rtl-sdr
       sdrpp
       sdrangel
     ];
-
-    # RUST_BACKTRACE = 1;
   }
