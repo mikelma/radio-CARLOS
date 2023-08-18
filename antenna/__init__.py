@@ -1,6 +1,6 @@
 import os
 
-from rotor import Rotor
+from .rotor import Rotor
 
 def enable_biast():
     cmd = f"rtl_biast - b 1"
