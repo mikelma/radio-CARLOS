@@ -5,6 +5,7 @@ let
     ps.toolz
     ps.scipy
     ps.matplotlib
+    ps.astropy
   ]);
 in
   mkShell rec {
