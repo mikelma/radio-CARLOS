@@ -2,7 +2,7 @@ import socket
 import atexit
 
 class Rotor():
-    def __init__(host, port):
+    def __init__(self, host, port):
         self.s = socket.socket(socket.AF_INET,
                                socket.SOCK_STREAM)
         self.s.connect((host, port))
@@ -14,7 +14,7 @@ class Rotor():
         cmd = f"P {float(azim)} {float(elev)}\n"
         if verbose:
             print(f"Sending command: {cmd}")
-        s.sendall(cmd.encode("ascii"))
+        self.s.sendall(cmd.encode("ascii"))
 
     def close(self):
         self.s.close()
