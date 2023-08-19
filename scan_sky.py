@@ -29,15 +29,9 @@ def parse_args():
     parser.add_argument("--wait-time", type=int, default=5,
             help="Time in seconds to wait for the rotor to get into position.")
 
-    #parser.add_argument("-astart", type=int, required=True,
-    #        help="Azimut start angle.")
-    #parser.add_argument("-aend", type=int, required=True,
-    #        help="Azimut end angle.")
-    #parser.add_argument("-estart", type=int, required=True,
-    #        help="Elevation start angle.")
-    #parser.add_argument("-eend", type=int, required=True,
-    #        help="Elevation end angle.")
-
+    parser.add_argument("--coords", type=str, default="sun",
+            help="Coordinates of the center of the scan, \
+or objective by name: 'sun' (default).")
     parser.add_argument("--azim-range", type=int, default=0,
             help="Azimut scan range.")
     parser.add_argument("--elev-range", type=int, default=0,
@@ -50,13 +44,18 @@ def parse_args():
     # fmt: on
     return parser.parse_args()
 
-def target_location(loc):
+def target_location(antenna_loc, objective):
     now = Time.now()
-    altaz = coord.AltAz(location=loc, obstime=now)
-    sun = coord.get_sun(now)
+    altaz = coord.AltAz(location=antenna_loc,
+                        obstime=now)
 
-    azim = sun.transform_to(altaz).az.dms # (degree, min, sec)
-    elev = sun.transform_to(altaz).alt.dms
+    if objective == "sun":
+        objective_coords = coord.get_sun(now)
+    else:
+        objective_coords = coord.SkyCoord(objective, frame=coord.Galactic)
+
+    azim = objective_coords.transform_to(altaz).az.dms # (degree, min, sec)
+    elev = objective_coords.transform_to(altaz).alt.dms
 
     return azim, elev
 
@@ -76,7 +75,7 @@ if __name__ == "__main__":
 
     # move the rotor to start position
     print("Moving to initial position...")
-    init_az, init_el = target_location(loc)
+    init_az, init_el = target_location(loc, args.coords)
     rotor.set_pos(azim=init_az[0] + azim_range[0], elev=init_el[0] + elev_range[0])
     time.sleep(30)
 
@@ -90,7 +89,7 @@ if __name__ == "__main__":
     counter = 0
     for elev_offset in elev_range:
         for azim_offset in azim_range:
-            azim, elev = target_location(loc)
+            azim, elev = target_location(loc, args.coords)
             rec_azim = azim[0] + azim_offset
             rec_elev = elev[0] + elev_offset
 
@@ -107,4 +106,3 @@ if __name__ == "__main__":
     os.chdir(prefix)
     os.system(f"tar -czvf '{dirname}.tar.gz' '{dirname}'")
     os.system(f"rm -r '{dirname}'")
-
