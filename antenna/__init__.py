@@ -3,7 +3,7 @@ import os
 from .rotor import Rotor
 
 def enable_biast():
-    cmd = f"rtl_biast - b 1"
+    cmd = f"rtl_biast -b 1"
     ret = os.system(cmd)
     if ret != 0:
         raise Exception(f"Failed to activate bias T. Command: {cmd}")
