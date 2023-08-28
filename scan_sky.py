@@ -30,7 +30,7 @@ def parse_args():
             help="Time in seconds to wait for the rotor to get into position.")
 
     parser.add_argument("--coords", type=str, default="sun",
-            help="Coordinates of the center of the scan, \
+            help="Coordinates of the center of the scan (Ra/Dec), \
 or objective by name: 'sun' (default).")
     parser.add_argument("--azim-range", type=int, default=0,
             help="Azimut scan range.")
