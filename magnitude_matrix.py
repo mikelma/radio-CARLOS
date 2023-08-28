@@ -5,6 +5,7 @@ import scipy.signal as signal
 import sys
 import glob
 import argparse
+from scipy.stats import rankdata
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Generate a frequency magnitude matrix from IQ samples.")
@@ -14,12 +15,12 @@ def parse_args():
     parser.add_argument("--window-start", type=int, required=True, help="Start of the window to analyze in Hz.")
     parser.add_argument("--window-end", type=int, required=True, help="End of the window to analyze in Hz.")
 
-    parser.add_argument("-astart", type=int, required=True, help="Azimut start angle.")
-    parser.add_argument("-aend", type=int, required=True, help="Azimut end angle.")
-    parser.add_argument("-estart", type=int, required=True, help="Elevation start angle.")
-    parser.add_argument("-eend", type=int, required=True, help="Elevation end angle.")
+    # parser.add_argument("-astart", type=int, required=True, help="Azimut start angle.")
+    # parser.add_argument("-aend", type=int, required=True, help="Azimut end angle.")
+    # parser.add_argument("-estart", type=int, required=True, help="Elevation start angle.")
+    # parser.add_argument("-eend", type=int, required=True, help="Elevation end angle.")
 
-    parser.add_argument("--save-matrix", type=str,
+    parser.add_argument("--save-matrix", type=str, default=None,
                         help="If provided, the magnitude matrix will be saved into the specified path.")
 
     parser.add_argument("data_dir", type=str, default="iq_data",
@@ -76,31 +77,52 @@ def file_to_signal(fname):
 if __name__ == "__main__":
     args = parse_args()
 
-    mat = np.zeros((args.aend-args.astart+1, args.eend-args.estart+1))
+    lst_azim = []
+    lst_elev = []
+    lst_mag = []
     for fname in glob.glob(f"{args.data_dir}/*.bin"):
-        azimut = int(fname.split("_")[-2])
-        elev = int(fname.split("_")[-1].split(".")[0])
-        print(azimut, elev)
-
-        i = azimut - args.astart
-        j = elev - args.eend
+        suf = fname.split("/")[-1]
+        off_az = int(suf.split("_")[-2])
+        off_el = int(suf.split("_")[-1].split(".")[0])
 
         data = file_to_signal(fname)
         mag, freq, num = magnitude_of_peak(data, args.sample_rate, args.freq,
                                            args.window_start, args.window_end)
+
+        lst_azim.append(off_az)
+        lst_elev.append(off_el)
+        lst_mag.append(mag)
 
         print("\nfile: ", fname)
         print("magnitude of the peak:", mag)
         print("frequency of the peak:", freq)
         print("number of peaks:", num)
 
-        mat[i][j] = mag
+    mat = np.zeros((len(np.unique(lst_elev)), len(np.unique(lst_azim))))
+    print(lst_azim, lst_elev, lst_mag)
 
-    plt.imshow(mat.T)
-    plt.colorbar()
+    elev_idx = rankdata(lst_elev, method="dense") - 1
+    azim_idx = rankdata(lst_azim, method="dense") - 1
+    for idx, (i, j) in enumerate(zip(elev_idx, azim_idx)):
+        mat[i][j] = lst_mag[idx]
+
+    print(mat)
+
+    plt.imshow(mat, cmap="gray")
+    plt.colorbar(label="dB")
     plt.xlabel("Azimut")
     plt.ylabel("Elevation")
+
+    x_labels = np.sort(np.unique(lst_azim))
+    y_labels = np.sort(np.unique(lst_elev))
+
+    plt.yticks(range(len(y_labels)), y_labels)
+    plt.xticks(range(len(x_labels)), x_labels)
+    wa, we = args.window_start / 1e9, args.window_end / 1e9
+    plt.title(f"Magnitude of the peaks in the {wa}-{we} Hz range")
+    plt.tight_layout()
     plt.show()
 
-    print("* Saving magnitude matrix to current directory")
-    np.save("magnitude_matrix", mat)
+    if args.save_matrix is not None:
+        print("* Saving magnitude matrix to current directory")
+        np.save(args.save_matrix, mat)
