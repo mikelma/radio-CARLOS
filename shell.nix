@@ -14,10 +14,9 @@ in
       pythonEnv
       black
 
-      # sdr-rlt
-      gnuradio
-      rtl-sdr
-      sdrpp
-      sdrangel
+      # gnuradio
+      # rtl-sdr
+      # sdrpp
+      # sdrangel
     ];
   }
